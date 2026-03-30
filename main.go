@@ -12,7 +12,7 @@ import (
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
+
 	app := NewApp()
 
 	// Create application with options
@@ -33,4 +33,24 @@ func main() {
 	if err != nil {
 		println("Error:", err.Error())
 	}
+
 }
+
+//testing tracker via testing
+/*
+
+
+	inPath := os.Args[1]
+	outPath := os.Args[2]
+
+	tf, err := p2p.Open(inPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = tf.DownloadToFile(outPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+*/

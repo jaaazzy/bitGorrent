@@ -1,9 +1,6 @@
 package p2p
 
 import (
-	"bitGorrent/internal/client"
-	"bitGorrent/internal/message"
-	"bitGorrent/internal/peers"
 	"bytes"
 	"crypto/sha1"
 	"fmt"
@@ -20,7 +17,7 @@ const MaxBacklog = 5
 
 // Torrent holds data required to download a torrent from a list of peers
 type Torrent struct {
-	Peers       []peers.Peer
+	Peers       []Peer
 	PeerID      [20]byte
 	InfoHash    [20]byte
 	PieceHashes [][20]byte
@@ -42,7 +39,7 @@ type pieceResult struct {
 
 type pieceProgress struct {
 	index      int
-	client     *client.Client
+	client     *Client
 	buf        []byte
 	downloaded int
 	requested  int
@@ -50,7 +47,7 @@ type pieceProgress struct {
 }
 
 func (state *pieceProgress) readMessage() error {
-	msg, err := state.client.Read() // this call blocks
+	msg, err := state.client.ReadClient() // this call blocks
 	if err != nil {
 		return err
 	}
@@ -60,18 +57,18 @@ func (state *pieceProgress) readMessage() error {
 	}
 
 	switch msg.ID {
-	case message.MsgUnchoke:
+	case MsgUnchoke:
 		state.client.Choked = false
-	case message.MsgChoke:
+	case MsgChoke:
 		state.client.Choked = true
-	case message.MsgHave:
-		index, err := message.ParseHave(msg)
+	case MsgHave:
+		index, err := ParseHave(msg)
 		if err != nil {
 			return err
 		}
 		state.client.Bitfield.SetPiece(index)
-	case message.MsgPiece:
-		n, err := message.ParsePiece(state.index, state.buf, msg)
+	case MsgPiece:
+		n, err := ParsePiece(state.index, state.buf, msg)
 		if err != nil {
 			return err
 		}
@@ -81,7 +78,7 @@ func (state *pieceProgress) readMessage() error {
 	return nil
 }
 
-func attemptDownloadPiece(c *client.Client, pw *pieceWork) ([]byte, error) {
+func attemptDownloadPiece(c *Client, pw *pieceWork) ([]byte, error) {
 	state := pieceProgress{
 		index:  pw.index,
 		client: c,
@@ -129,8 +126,8 @@ func checkIntegrity(pw *pieceWork, buf []byte) error {
 	return nil
 }
 
-func (t *Torrent) startDownloadWorker(peer peers.Peer, workQueue chan *pieceWork, results chan *pieceResult) {
-	c, err := client.New(peer, t.PeerID, t.InfoHash)
+func (t *Torrent) startDownloadWorker(peer Peer, workQueue chan *pieceWork, results chan *pieceResult) {
+	c, err := NewClient(peer, t.PeerID, t.InfoHash)
 	if err != nil {
 		log.Printf("Could not handshake with %s. Disconnecting\n", peer.IP)
 		return

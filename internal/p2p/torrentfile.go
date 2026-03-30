@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"bitGorrent/internal/p2p"
 	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
@@ -49,7 +48,7 @@ func (t *TorrentFile) DownloadToFile(path string) error {
 		return err
 	}
 
-	torrent := p2p.Torrent{
+	torrent := Torrent{
 		Peers:       peers,
 		PeerID:      peerID,
 		InfoHash:    t.InfoHash,

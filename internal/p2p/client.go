@@ -1,10 +1,6 @@
 package p2p
 
 import (
-	"bitGorrent/internal/bitfield"
-	"bitGorrent/internal/handshake"
-	"bitGorrent/internal/message"
-	"bitGorrent/internal/peers"
 	"bytes"
 	"fmt"
 	"net"
@@ -15,23 +11,23 @@ import (
 type Client struct {
 	Conn     net.Conn
 	Choked   bool
-	Bitfield bitfield.Bitfield
-	peer     peers.Peer
+	Bitfield Bitfield
+	peer     Peer
 	infoHash [20]byte
 	peerID   [20]byte
 }
 
-func completeHandshake(conn net.Conn, infohash, peerID [20]byte) (*handshake.Handshake, error) {
+func completeHandshake(conn net.Conn, infohash, peerID [20]byte) (*Handshake, error) {
 	conn.SetDeadline(time.Now().Add(3 * time.Second))
 	defer conn.SetDeadline(time.Time{}) // Disable the deadline
 
-	req := handshake.New(infohash, peerID)
+	req := NewHandshake(infohash, peerID)
 	_, err := conn.Write(req.Serialize())
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := handshake.Read(conn)
+	res, err := ReadHandshake(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -41,11 +37,11 @@ func completeHandshake(conn net.Conn, infohash, peerID [20]byte) (*handshake.Han
 	return res, nil
 }
 
-func recvBitfield(conn net.Conn) (bitfield.Bitfield, error) {
+func recvBitfield(conn net.Conn) (Bitfield, error) {
 	conn.SetDeadline(time.Now().Add(5 * time.Second))
 	defer conn.SetDeadline(time.Time{}) // Disable the deadline
 
-	msg, err := message.Read(conn)
+	msg, err := ReadMessage(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -53,17 +49,17 @@ func recvBitfield(conn net.Conn) (bitfield.Bitfield, error) {
 		err := fmt.Errorf("Expected bitfield but got %s", msg)
 		return nil, err
 	}
-	if msg.ID != message.MsgBitfield {
+	if msg.ID != MsgBitfield {
 		err := fmt.Errorf("Expected bitfield but got ID %d", msg.ID)
 		return nil, err
 	}
 
-	return msg.Payload, nil
+	return Bitfield(msg.Payload), nil
 }
 
 // New connects with a peer, completes a handshake, and receives a handshake
 // returns an err if any of those fail.
-func New(peer peers.Peer, peerID, infoHash [20]byte) (*Client, error) {
+func NewClient(peer Peer, peerID, infoHash [20]byte) (*Client, error) {
 	conn, err := net.DialTimeout("tcp", peer.String(), 3*time.Second)
 	if err != nil {
 		return nil, err
@@ -92,42 +88,42 @@ func New(peer peers.Peer, peerID, infoHash [20]byte) (*Client, error) {
 }
 
 // Read reads and consumes a message from the connection
-func (c *Client) Read() (*message.Message, error) {
-	msg, err := message.Read(c.Conn)
+func (c *Client) ReadClient() (*Message, error) {
+	msg, err := ReadMessage(c.Conn)
 	return msg, err
 }
 
 // SendRequest sends a Request message to the peer
 func (c *Client) SendRequest(index, begin, length int) error {
-	req := message.FormatRequest(index, begin, length)
+	req := FormatRequest(index, begin, length)
 	_, err := c.Conn.Write(req.Serialize())
 	return err
 }
 
 // SendInterested sends an Interested message to the peer
 func (c *Client) SendInterested() error {
-	msg := message.Message{ID: message.MsgInterested}
+	msg := Message{ID: MsgInterested}
 	_, err := c.Conn.Write(msg.Serialize())
 	return err
 }
 
 // SendNotInterested sends a NotInterested message to the peer
 func (c *Client) SendNotInterested() error {
-	msg := message.Message{ID: message.MsgNotInterested}
+	msg := Message{ID: MsgNotInterested}
 	_, err := c.Conn.Write(msg.Serialize())
 	return err
 }
 
 // SendUnchoke sends an Unchoke message to the peer
 func (c *Client) SendUnchoke() error {
-	msg := message.Message{ID: message.MsgUnchoke}
+	msg := Message{ID: MsgUnchoke}
 	_, err := c.Conn.Write(msg.Serialize())
 	return err
 }
 
 // SendHave sends a Have message to the peer
 func (c *Client) SendHave(index int) error {
-	msg := message.FormatHave(index)
+	msg := FormatHave(index)
 	_, err := c.Conn.Write(msg.Serialize())
 	return err
 }
