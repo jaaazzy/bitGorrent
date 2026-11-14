@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Wails bindings are generated from Go and do not represent handwritten source.
+frontend/wailsjs/** linguist-generated=true
