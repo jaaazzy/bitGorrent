@@ -22,7 +22,7 @@ func completeHandshake(conn net.Conn, infohash, peerID [20]byte) (*Handshake, er
 	defer conn.SetDeadline(time.Time{}) // Disable the deadline
 
 	req := NewHandshake(infohash, peerID)
-	_, err := conn.Write(req.Serialize())
+	err := writeFull(conn, req.Serialize())
 	if err != nil {
 		return nil, err
 	}
@@ -96,34 +96,34 @@ func (c *Client) ReadClient() (*Message, error) {
 // SendRequest sends a Request message to the peer
 func (c *Client) SendRequest(index, begin, length int) error {
 	req := FormatRequest(index, begin, length)
-	_, err := c.Conn.Write(req.Serialize())
+	err := writeFull(c.Conn, req.Serialize())
 	return err
 }
 
 // SendInterested sends an Interested message to the peer
 func (c *Client) SendInterested() error {
 	msg := Message{ID: MsgInterested}
-	_, err := c.Conn.Write(msg.Serialize())
+	err := writeFull(c.Conn, msg.Serialize())
 	return err
 }
 
 // SendNotInterested sends a NotInterested message to the peer
 func (c *Client) SendNotInterested() error {
 	msg := Message{ID: MsgNotInterested}
-	_, err := c.Conn.Write(msg.Serialize())
+	err := writeFull(c.Conn, msg.Serialize())
 	return err
 }
 
 // SendUnchoke sends an Unchoke message to the peer
 func (c *Client) SendUnchoke() error {
 	msg := Message{ID: MsgUnchoke}
-	_, err := c.Conn.Write(msg.Serialize())
+	err := writeFull(c.Conn, msg.Serialize())
 	return err
 }
 
 // SendHave sends a Have message to the peer
 func (c *Client) SendHave(index int) error {
 	msg := FormatHave(index)
-	_, err := c.Conn.Write(msg.Serialize())
+	err := writeFull(c.Conn, msg.Serialize())
 	return err
 }

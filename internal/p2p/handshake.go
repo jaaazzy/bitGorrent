@@ -42,7 +42,7 @@ func ReadHandshake(r io.Reader) (*Handshake, error) {
 	}
 	pstrlen := int(lengthBuf[0])
 
-	if pstrlen == 0 {
+	if pstrlen != 19 {
 		err := fmt.Errorf("pstrlen cannot be 0")
 		return nil, err
 	}
@@ -62,6 +62,9 @@ func ReadHandshake(r io.Reader) (*Handshake, error) {
 		Pstr:     string(handshakeBuf[0:pstrlen]),
 		InfoHash: infoHash,
 		PeerID:   peerID,
+	}
+	if h.Pstr != "BitTorrent protocol" {
+		return nil, fmt.Errorf("unsupported peer protocol")
 	}
 
 	return &h, nil

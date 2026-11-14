@@ -126,6 +126,9 @@ func ReadMessage(r io.Reader) (*Message, error) {
 	}
 
 	length := binary.BigEndian.Uint32(lengthBuf)
+	if length > 1<<20 {
+		return nil, fmt.Errorf("peer message exceeds 1 MiB")
+	}
 
 	if length == 0 {
 		return nil, nil
