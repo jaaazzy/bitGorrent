@@ -236,6 +236,19 @@ func TestEngineLocalSwarm(t *testing.T) {
 	if e = (Engine{}).Run(ctx, RunOptions{Metadata: m, Destination: root, Selected: []int{0}, CheckOnly: true}, func(Progress) {}); e != nil {
 		t.Fatal(e)
 	}
+	if e = (Engine{}).Run(ctx, RunOptions{Metadata: m, Destination: root, Selected: []int{0}, SeedRatio: 1, Mode: ModeDownload}, func(Progress) {}); e != nil {
+		t.Fatal("download-only mode did not release its slot", e)
+	}
+}
+
+func TestSeedModeRejectsMissingPieces(t *testing.T) {
+	m := fixture(t, []byte("abcd"), 4, false)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	err := (Engine{}).Run(ctx, RunOptions{Metadata: m, Destination: t.TempDir(), Selected: []int{0}, Mode: ModeSeed, SeedRatio: 1}, func(Progress) {})
+	if err == nil || errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("seed mode attempted to download missing pieces: %v", err)
+	}
 }
 func TestNoPeersCancellation(t *testing.T) {
 	m := fixture(t, []byte("abcd"), 4, false)

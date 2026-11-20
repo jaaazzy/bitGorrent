@@ -31,7 +31,7 @@ input[type='checkbox'] { accent-color: var(--accent); width: 15px; height: 15px;
 * { scrollbar-color: var(--muted) var(--soft); scrollbar-width: thin; }
 h1,h2,h3,p { margin: 0; }
 .app { display: grid; grid-template-columns: 194px minmax(0, 1fr); height: 100dvh; min-height: 500px; }
-.sidebar { background: var(--sidebar); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 0 12px 18px; }
+.sidebar { background: var(--sidebar); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 0 12px 18px; overflow-y: auto; }
 .brand { height: 74px; display: flex; align-items: center; gap: 10px; padding: 0 11px; font-size: 17px; font-weight: 650; letter-spacing: -.5px; }
 .brand-symbol { color: var(--accent); display: flex; }
 .sidebar nav { display: grid; gap: 4px; }
@@ -41,7 +41,7 @@ h1,h2,h3,p { margin: 0; }
 .sidebar-note { margin-top: auto; display: flex; gap: 8px; align-items: flex-start; padding: 16px 10px 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
 .sidebar-note svg { flex-shrink: 0; margin-top: 2px; }
 .sidebar-note span { opacity: .9; }
-.workspace { min-width: 0; display: flex; flex-direction: column; }
+.workspace { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .toolbar { min-height: 64px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); padding: 12px 22px; }
 .toolbar-group { display: flex; gap: 7px; align-items: center; }
 .transfer-actions { border-left: 1px solid var(--line); padding-left: 16px; }
@@ -52,12 +52,14 @@ kbd { border: 1px solid var(--line); border-radius: 3px; padding: 2px 4px; font:
 .notice svg { flex-shrink: 0; }
 .error-notice { color: var(--error); }
 .error-notice span { flex: 1; overflow-wrap: anywhere; }
-.transfer-section { flex: 1; min-height: 200px; display: flex; flex-direction: column; }
+.transfer-section { flex: 1; min-height: 180px; display: flex; flex-direction: column; overflow: hidden; }
 .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 25px 24px 21px; }
 .section-heading > div { display: flex; align-items: baseline; gap: 12px; }
 h1 { font-size: 21px; font-weight: 600; letter-spacing: -.5px; }
 .section-heading span { color: var(--muted); font-size: 12px; }
-.table-scroll { overflow: auto; }
+.table-scroll { overflow: auto; min-height: 0; flex: 1; }
+.table-scroll.empty-table { flex: 0 0 auto; }
+.transfer-table thead { position: sticky; top: 0; z-index: 1; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .transfer-table { table-layout: fixed; min-width: 620px; }
 .transfer-table col:first-child { width: 32%; }
@@ -70,7 +72,9 @@ th:first-child,td:first-child { padding-left: 24px; }
 .column-grip { position: absolute; top: 4px; bottom: 4px; right: 0; width: 8px; cursor: col-resize; touch-action: none; border-right: 1px solid var(--line); }
 .column-grip:hover { border-color: var(--accent); }
 td { padding: 15px 12px; vertical-align: middle; font-size: 12px; }
-.transfer-row { background: var(--selected); border-bottom: 1px solid var(--line); }
+.transfer-row { background: var(--bg); border-bottom: 1px solid var(--line); cursor: default; }
+.transfer-row:hover { background: var(--soft); }
+.transfer-row[aria-selected='true'] { background: var(--selected); }
 .transfer-name { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .file-icon { color: var(--accent); flex-shrink: 0; display: flex; }
 .transfer-name > div { min-width: 0; }
@@ -84,7 +88,7 @@ progress::-webkit-progress-value { background: var(--accent); }
 .state::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .state-downloading,.state-seeding,.state-completed { color: var(--success); }
 .state-error { color: var(--error); }
-.state-paused,.state-waiting,.state-pausing,.state-checking { color: var(--muted); }
+.state-queued,.state-paused,.state-waiting,.state-pausing,.state-removing,.state-checking { color: var(--muted); }
 .empty-state { margin: auto; text-align: center; padding: 38px 20px; color: var(--muted); }
 .empty-icon { color: var(--muted); margin: 0 auto 18px; display: flex; justify-content: center; }
 .empty-state h2 { color: var(--text); font-size: 18px; font-weight: 500; letter-spacing: -.3px; }
@@ -156,6 +160,23 @@ summary { display: flex; gap: 7px; align-items: center; cursor: pointer; color: 
 .remove-dialog { width: 420px; padding: 24px; }
 .remove-dialog h2 { font-size: 18px; font-weight: 600; }
 .remove-dialog p { line-height: 1.7; color: var(--muted); margin: 12px 0 24px; }
+.sidebar-bottom { margin-top: auto; padding-top: 16px; }
+.sidebar-bottom .sidebar-note { padding-top: 12px; }
+.queue-settings { margin: 0; padding: 10px 9px 0; }
+.queue-settings form { margin-top: 14px; }
+.queue-settings label { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 8px 0; font-size: 11px; }
+.queue-settings input { width: 48px; padding: 6px; }
+.queue-settings p { font-size: 11px; color: var(--muted); line-height: 1.6; margin: 10px 0; }
+.queue-settings button { width: 100%; font-size: 12px; }
+.queue-actions { display: flex; align-items: center; gap: 5px; }
+@media (max-height: 650px) {
+ .section-heading { padding-top: 16px; padding-bottom: 14px; }
+ .details-pane { height: 220px; }
+ .empty-state { padding-block: 12px; }
+ .empty-state .empty-icon { display: none; }
+ .empty-state h2 { font-size: 16px; }
+ .empty-state p { margin: 7px 0 10px; }
+}
 .dialog-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 @media (max-width: 1050px) { .toolbar { gap: 10px; padding: 12px 16px; } .search input { width: 115px; } .search kbd { display: none; } .transfer-actions { padding-left: 10px; } .app { grid-template-columns: 175px minmax(0,1fr); } }
 @media (max-width: 850px) { .toolbar { flex-wrap: wrap; gap: 10px; } .search { flex: 1; justify-content: flex-end; } .search input { width: 110px; } .toolbar-group button { padding-inline: 8px; } .app { grid-template-columns: 162px minmax(0,1fr); } .sidebar { padding-inline: 8px; } .brand { font-size: 16px; padding-inline: 7px; } .nav-item { font-size: 12px; padding-inline: 8px; gap: 8px; } .overview-grid { gap: 14px; } .details-pane { height: 252px; } }

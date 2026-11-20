@@ -8,16 +8,21 @@ import (
 )
 
 type Run struct {
-	Options  p2p.RunOptions
-	Progress chan p2p.Progress
-	Finish   chan error
-	Stopped  chan struct{}
+	Options   p2p.RunOptions
+	Progress  chan p2p.Progress
+	Finish    chan error
+	Stopped   chan struct{}
+	Cancelled chan struct{}
+	Report    func(p2p.Progress)
 }
-type Fake struct{ Started chan *Run }
+type Fake struct {
+	Started     chan *Run
+	AfterCancel <-chan struct{}
+}
 
-func New() *Fake { return &Fake{Started: make(chan *Run, 16)} }
+func New() *Fake { return &Fake{Started: make(chan *Run, 64)} }
 func (f *Fake) Run(ctx context.Context, o p2p.RunOptions, report func(p2p.Progress)) error {
-	run := &Run{Options: o, Progress: make(chan p2p.Progress), Finish: make(chan error), Stopped: make(chan struct{})}
+	run := &Run{Options: o, Progress: make(chan p2p.Progress), Finish: make(chan error), Stopped: make(chan struct{}), Cancelled: make(chan struct{}), Report: report}
 	defer close(run.Stopped)
 	select {
 	case f.Started <- run:
@@ -27,6 +32,10 @@ func (f *Fake) Run(ctx context.Context, o p2p.RunOptions, report func(p2p.Progre
 	for {
 		select {
 		case <-ctx.Done():
+			close(run.Cancelled)
+			if f.AfterCancel != nil {
+				<-f.AfterCancel
+			}
 			return ctx.Err()
 		case p := <-run.Progress:
 			report(p)

@@ -4,10 +4,11 @@ import { labels, type State, type Preview, type Snapshot } from './types';
 import type { queue } from '../wailsjs/go/models';
 
 function normalizeSnapshot(value: queue.Snapshot): Snapshot {
- if (!value.job) return { revision: value.revision, job: null };
- const job = value.job;
- if (!(job.progress.state in labels)) throw new Error('The engine returned an unknown transfer state.');
- return { revision: value.revision, job: { ...job, selected: job.selected ?? [], files: job.files ?? [], trackers: job.trackers ?? [], progress: { ...job.progress, state: job.progress.state as State, fileCompleted: job.progress.fileCompleted ?? [] } } };
+ const jobs = (value.jobs ?? []).map(job => {
+  if (!(job.progress.state in labels)) throw new Error('The engine returned an unknown transfer state.');
+  return { ...job, selected: job.selected ?? [], files: job.files ?? [], trackers: job.trackers ?? [], progress: { ...job.progress, state: job.progress.state as State, fileCompleted: job.progress.fileCompleted ?? [] } };
+ });
+ return { revision: value.revision, jobs, order: value.order ?? [], limits: value.limits, error: value.error ?? '' };
 }
 
 export const desktop = () => 'go' in window;
@@ -20,11 +21,13 @@ export const backend = {
  async add(p: Preview, destination: string, selected: number[], ratio: number, dl: number, ul: number) {
   requireDesktop(); return app.AddTorrent(p.id, destination, selected, ratio, dl, ul);
  },
- async pause() { requireDesktop(); return app.PauseTorrent(); },
- async resume() { requireDesktop(); return app.ResumeTorrent(); },
- async remove() { requireDesktop(); return app.RemoveTorrent(); },
- async recheck() { requireDesktop(); return app.RecheckTorrent(); },
- async reveal() { requireDesktop(); return app.RevealDestination(); },
+ async pause(id: string) { requireDesktop(); return app.PauseTorrent(id); },
+ async resume(id: string) { requireDesktop(); return app.ResumeTorrent(id); },
+ async remove(id: string) { requireDesktop(); return app.RemoveTorrent(id); },
+ async recheck(id: string) { requireDesktop(); return app.RecheckTorrent(id); },
+ async reveal(id: string) { requireDesktop(); return app.RevealDestination(id); },
+ async limits(downloads: number, seeds: number) { requireDesktop(); return app.SetQueueLimits(downloads, seeds); },
+ async move(id: string, direction: number) { requireDesktop(); return app.MoveTorrent(id, direction); },
  cancelMetadata() { if (desktop()) void app.CancelMetadata(); },
  onSnapshot(callback: (s: Snapshot) => void) { return desktop() ? EventsOn('transfers:changed', (value: queue.Snapshot) => callback(normalizeSnapshot(value))) : () => {}; },
  onMetadata(callback: (s: string) => void) { return desktop() ? EventsOn('metadata:status', callback) : () => {}; },

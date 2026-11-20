@@ -11,16 +11,20 @@ export function GetSnapshot():Promise<queue.Snapshot>;
 
 export function InspectTorrent(arg1:string):Promise<main.Preview>;
 
-export function PauseTorrent():Promise<void>;
+export function MoveTorrent(arg1:string,arg2:number):Promise<void>;
 
-export function RecheckTorrent():Promise<void>;
+export function PauseTorrent(arg1:string):Promise<void>;
 
-export function RemoveTorrent():Promise<void>;
+export function RecheckTorrent(arg1:string):Promise<void>;
 
-export function ResumeTorrent():Promise<void>;
+export function RemoveTorrent(arg1:string):Promise<void>;
 
-export function RevealDestination():Promise<void>;
+export function ResumeTorrent(arg1:string):Promise<void>;
+
+export function RevealDestination(arg1:string):Promise<void>;
 
 export function SelectFolder():Promise<string>;
 
 export function SelectTorrentFile():Promise<string>;
+
+export function SetQueueLimits(arg1:number,arg2:number):Promise<void>;

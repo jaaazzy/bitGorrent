@@ -3,7 +3,7 @@ import { backend } from './backend';
 import { Icon } from './Icon';
 import { bytes, errorText, type Preview } from './types';
 
-export default function AddTorrent({ initialSource, magnet, onClose }: { initialSource: string; magnet: boolean; onClose: () => void }) {
+export default function AddTorrent({ initialSource, magnet, onClose, onAdded }: { initialSource: string; magnet: boolean; onClose: () => void; onAdded: (id: string) => void }) {
  const [source, setSource] = useState(initialSource);
  const [preview, setPreview] = useState<Preview | null>(null);
  const [selected, setSelected] = useState<number[]>([]);
@@ -29,7 +29,7 @@ export default function AddTorrent({ initialSource, magnet, onClose }: { initial
  useEffect(() => { if (initialSource) void inspect(initialSource); }, [initialSource]);
  async function add() {
   if (!preview) return; setLoading(true); setError('');
-  try { await backend.add(preview, folder, selected, ratio, download * 1024, upload * 1024); onClose(); }
+  try { await backend.add(preview, folder, selected, ratio, download * 1024, upload * 1024); onAdded(preview.id); onClose(); }
   catch (e) { setError(errorText(e)); setLoading(false); }
  }
  return <dialog ref={dialog} className="add-dialog" onCancel={onClose} aria-labelledby="add-title">
@@ -46,6 +46,6 @@ export default function AddTorrent({ initialSource, magnet, onClose }: { initial
    </>}
    {error && <p className="error-message" role="alert">{error}</p>}
   </div>
-  <footer className="dialog-footer"><span>{preview ? `${bytes(preview.files.reduce((n, f, i) => n + (selected.includes(i) ? f.length : 0), 0))} selected` : 'Metadata is verified before downloading.'}</span><button onClick={onClose}>Cancel</button><button className="primary" disabled={!preview || !folder || !selected.length || loading || !Number.isFinite(ratio) || ratio < 0 || ratio > 100 || download < 0 || upload < 0} onClick={() => void add()}><Icon name="download" size={16} /> Start download</button></footer>
+  <footer className="dialog-footer"><span>{preview ? `${bytes(preview.files.reduce((n, f, i) => n + (selected.includes(i) ? f.length : 0), 0))} selected` : 'Metadata is verified before downloading.'}</span><button onClick={onClose}>Cancel</button><button className="primary" disabled={!preview || !folder || !selected.length || loading || !Number.isFinite(ratio) || ratio < 0 || ratio > 100 || !Number.isFinite(download) || !Number.isFinite(upload) || download < 0 || upload < 0} onClick={() => void add()}><Icon name="download" size={16} /> Add to queue</button></footer>
  </dialog>;
 }

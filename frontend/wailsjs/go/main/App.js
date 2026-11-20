@@ -18,24 +18,28 @@ export function InspectTorrent(arg1) {
   return window['go']['main']['App']['InspectTorrent'](arg1);
 }
 
-export function PauseTorrent() {
-  return window['go']['main']['App']['PauseTorrent']();
+export function MoveTorrent(arg1, arg2) {
+  return window['go']['main']['App']['MoveTorrent'](arg1, arg2);
 }
 
-export function RecheckTorrent() {
-  return window['go']['main']['App']['RecheckTorrent']();
+export function PauseTorrent(arg1) {
+  return window['go']['main']['App']['PauseTorrent'](arg1);
 }
 
-export function RemoveTorrent() {
-  return window['go']['main']['App']['RemoveTorrent']();
+export function RecheckTorrent(arg1) {
+  return window['go']['main']['App']['RecheckTorrent'](arg1);
 }
 
-export function ResumeTorrent() {
-  return window['go']['main']['App']['ResumeTorrent']();
+export function RemoveTorrent(arg1) {
+  return window['go']['main']['App']['RemoveTorrent'](arg1);
 }
 
-export function RevealDestination() {
-  return window['go']['main']['App']['RevealDestination']();
+export function ResumeTorrent(arg1) {
+  return window['go']['main']['App']['ResumeTorrent'](arg1);
+}
+
+export function RevealDestination(arg1) {
+  return window['go']['main']['App']['RevealDestination'](arg1);
 }
 
 export function SelectFolder() {
@@ -44,4 +48,8 @@ export function SelectFolder() {
 
 export function SelectTorrentFile() {
   return window['go']['main']['App']['SelectTorrentFile']();
+}
+
+export function SetQueueLimits(arg1, arg2) {
+  return window['go']['main']['App']['SetQueueLimits'](arg1, arg2);
 }

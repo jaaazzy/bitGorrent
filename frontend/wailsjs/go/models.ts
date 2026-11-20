@@ -106,6 +106,8 @@ export namespace queue {
 	    seedRatio: number;
 	    downloadLimit: number;
 	    uploadLimit: number;
+	    intent: string;
+	    private: boolean;
 	    progress: p2p.Progress;
 	
 	    static createFrom(source: any = {}) {
@@ -123,6 +125,8 @@ export namespace queue {
 	        this.seedRatio = source["seedRatio"];
 	        this.downloadLimit = source["downloadLimit"];
 	        this.uploadLimit = source["uploadLimit"];
+	        this.intent = source["intent"];
+	        this.private = source["private"];
 	        this.progress = this.convertValues(source["progress"], p2p.Progress);
 	    }
 	
@@ -144,9 +148,26 @@ export namespace queue {
 		    return a;
 		}
 	}
+	export class Limits {
+	    downloads: number;
+	    seeds: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Limits(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.downloads = source["downloads"];
+	        this.seeds = source["seeds"];
+	    }
+	}
 	export class Snapshot {
 	    revision: number;
-	    job?: Job;
+	    jobs: Job[];
+	    order: string[];
+	    limits: Limits;
+	    error: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Snapshot(source);
@@ -155,7 +176,10 @@ export namespace queue {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.revision = source["revision"];
-	        this.job = this.convertValues(source["job"], Job);
+	        this.jobs = this.convertValues(source["jobs"], Job);
+	        this.order = source["order"];
+	        this.limits = this.convertValues(source["limits"], Limits);
+	        this.error = source["error"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

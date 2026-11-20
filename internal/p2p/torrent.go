@@ -26,6 +26,14 @@ type Progress struct {
 	Message       string  `json:"message"`
 	FileCompleted []int64 `json:"fileCompleted"`
 }
+type RunMode string
+
+const (
+	ModeDownload RunMode = "download"
+	ModeSeed     RunMode = "seed"
+	ModeCheck    RunMode = "check"
+)
+
 type RunOptions struct {
 	Metadata        TorrentFile
 	Destination     string
@@ -35,10 +43,23 @@ type RunOptions struct {
 	UploadLimit     int64
 	CheckOnly       bool
 	InitialUploaded int64
+	Mode            RunMode
 }
 type Engine struct{}
 
 func (Engine) Run(ctx context.Context, o RunOptions, report func(Progress)) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if o.CheckOnly {
+		o.Mode = ModeCheck
+	}
+	if o.Mode == "" {
+		o.Mode = ModeDownload
+	}
+	if o.Mode != ModeDownload && o.Mode != ModeSeed && o.Mode != ModeCheck {
+		return errors.New("invalid transfer run mode")
+	}
 	s, err := openStorage(o.Metadata, o.Destination, o.Selected)
 	if err != nil {
 		return err
@@ -50,7 +71,13 @@ func (Engine) Run(ctx context.Context, o RunOptions, report func(Progress)) erro
 	if err = s.recheck(ctx, func(n int64) { p.Completed = n; p.FileCompleted = s.fileProgress(); report(p) }); err != nil {
 		return err
 	}
-	if o.CheckOnly {
+	if o.Mode == ModeCheck {
+		return nil
+	}
+	if o.Mode == ModeSeed && !s.complete() {
+		return errors.New("files are incomplete or changed; resume the download before seeding")
+	}
+	if o.Mode == ModeSeed && (o.SeedRatio <= 0 || float64(o.InitialUploaded) >= float64(s.total())*o.SeedRatio) {
 		return nil
 	}
 	defer s.checkpoint()
@@ -84,6 +111,15 @@ func (Engine) Run(ctx context.Context, o RunOptions, report func(Progress)) erro
 			listener.Close()
 		}
 		seedWG.Wait()
+		uploadMu.Lock()
+		p.Uploaded = uploaded
+		uploadMu.Unlock()
+		p.Completed = s.completed()
+		p.FileCompleted = s.fileProgress()
+		p.DownloadSpeed = 0
+		p.UploadSpeed = 0
+		p.Peers = 0
+		report(p)
 	}()
 	last := time.Now()
 	var lastDown int64
@@ -236,7 +272,7 @@ func (Engine) Run(ctx context.Context, o RunOptions, report func(Progress)) erro
 		return err
 	}
 	emit("completed", "Download verified", 0)
-	if o.SeedRatio <= 0 {
+	if o.Mode == ModeDownload || o.SeedRatio <= 0 {
 		return nil
 	}
 	if listenErr != nil {

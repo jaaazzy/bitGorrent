@@ -44,7 +44,9 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) shutdown(ctx context.Context) {
 	a.CancelMetadata()
 	if a.manager != nil {
-		a.manager.Close()
+		if err := a.manager.Close(); err != nil {
+			runtime.LogError(ctx, "Cannot save queue during shutdown: "+err.Error())
+		}
 	}
 }
 func (a *App) ready() error {
@@ -126,39 +128,53 @@ func (a *App) AddTorrent(id, destination string, selected []int, seedRatio float
 	a.mu.Unlock()
 	return a.manager.Add(t, destination, selected, seedRatio, downloadLimit, uploadLimit)
 }
-func (a *App) PauseTorrent() error {
+func (a *App) PauseTorrent(id string) error {
 	if e := a.ready(); e != nil {
 		return e
 	}
-	return a.manager.Pause()
+	return a.manager.Pause(id)
 }
-func (a *App) ResumeTorrent() error {
+func (a *App) ResumeTorrent(id string) error {
 	if e := a.ready(); e != nil {
 		return e
 	}
-	return a.manager.Start(false)
+	return a.manager.Resume(id)
 }
-func (a *App) RecheckTorrent() error {
+func (a *App) RecheckTorrent(id string) error {
 	if e := a.ready(); e != nil {
 		return e
 	}
-	return a.manager.Start(true)
+	return a.manager.Recheck(id)
 }
-func (a *App) RemoveTorrent() error {
+func (a *App) RemoveTorrent(id string) error {
 	if e := a.ready(); e != nil {
 		return e
 	}
-	return a.manager.Remove()
+	return a.manager.Remove(id)
 }
-func (a *App) RevealDestination() error {
+func (a *App) RevealDestination(id string) error {
 	if e := a.ready(); e != nil {
 		return e
 	}
 	s := a.manager.Snapshot()
-	if s.Job == nil {
-		return errors.New("no torrent selected")
+	for _, job := range s.Jobs {
+		if job.ID == id {
+			return exec.Command("explorer.exe", job.Destination).Start()
+		}
 	}
-	return exec.Command("explorer.exe", s.Job.Destination).Start()
+	return queue.ErrNotFound
+}
+func (a *App) SetQueueLimits(downloads, seeds int) error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	return a.manager.SetLimits(downloads, seeds)
+}
+func (a *App) MoveTorrent(id string, direction int) error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	return a.manager.MoveQueued(id, direction)
 }
 func (a *App) SelectTorrentFile() (string, error) {
 	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Add a torrent", Filters: []runtime.FileFilter{{DisplayName: "Torrent files (*.torrent)", Pattern: "*.torrent"}}})
