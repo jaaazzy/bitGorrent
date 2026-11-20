@@ -151,3 +151,7 @@ $env:GOCACHE = Join-Path $env:TEMP 'bitgorrent-go-cache'
 - Shared bandwidth limits across concurrent transfers.
 - Watch folders, bandwidth schedules, and completion notifications.
 - Tracker editing and peer exchange.
+
+## Mascot attribution
+
+BitGorrent's mascot is based on the Go Gopher designed by Renée French, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified for BitGorrent.
